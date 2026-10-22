@@ -1,0 +1,1 @@
+export const metadata={title:'Argentina al Horno | Empanadas Argentinas',description:'Empanadas artesanales en San Juan, Puerto Rico'};import './globals.css';export default function RootLayout({children}){return <html lang="es"><body>{children}</body></html>}
