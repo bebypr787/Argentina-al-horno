@@ -11,19 +11,57 @@ const flavors = [
 const wa = '17879483022';
 const contact = text => 'https://wa.me/' + wa + '?text=' + encodeURIComponent(text);
 const money = n => '$' + n.toFixed(2);
+
+const CART_KEY='argentina-al-horno-cart-v1';
+function puertoRicoToday(){
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Puerto_Rico',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const value=type=>parts.find(p=>p.type===type).value;
+ return value('year')+'-'+value('month')+'-'+value('day');
+}
+function restoreCart(raw){
+ if(!Array.isArray(raw))return [];
+ return raw.slice(0,100).flatMap(x=>{
+  if(!x||!Number.isSafeInteger(x.qty)||x.qty<1)return [];
+  if(flavors.some(f=>x.title==='Empanada de '+f.name))return [{title:x.title,detail:'Horneada',price:4,qty:x.qty}];
+  const size=x.title==='Combo de 6'?6:x.title==='Combo de 12'?12:0;
+  if(!size||typeof x.detail!=='string')return [];
+  const seen=new Set();let count=0;
+  for(const part of x.detail.split(', ')){
+   const match=part.match(/^(\d+) (.+)$/);
+   if(!match||!flavors.some(f=>f.name===match[2])||seen.has(match[2]))return [];
+   const qty=Number(match[1]);if(!Number.isSafeInteger(qty)||qty<1)return [];
+   seen.add(match[2]);count+=qty;
+  }
+  return count===size?[{title:x.title,detail:x.detail,price:size===6?17:34,qty:x.qty}]:[];
+ });
+}
+
 function Bag(){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M5 7h14l1 14H4L5 7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>}
 function Sun(){return <span className="sun" aria-hidden="true">☀</span>}
 export default function Home(){
  const [cart,setCart]=useState([]),[show,setShow]=useState(false),[size,setSize]=useState(12),[sel,setSel]=useState({}),[comboQty,setComboQty]=useState(1);
  const [name,setName]=useState(''),[phone,setPhone]=useState(''),[address,setAddress]=useState(''),[method,setMethod]=useState('ATH Móvil'),[delivery,setDelivery]=useState('Delivery'),[notes,setNotes]=useState(''),[error,setError]=useState(''),[toast,setToast]=useState('');
+ const [desiredDate,setDesiredDate]=useState(''),[desiredTime,setDesiredTime]=useState(''),[today,setToday]=useState(''),[cartLoaded,setCartLoaded]=useState(false),[cartSaved,setCartSaved]=useState(false);
  const dialog=useRef(null), toastTimer=useRef(null);
+ useEffect(()=>{
+  setToday(puertoRicoToday());
+  try{const saved=localStorage.getItem(CART_KEY);if(saved)setCart(restoreCart(JSON.parse(saved)));}catch{}
+  setCartLoaded(true);
+ },[]);
+ useEffect(()=>{
+  if(!cartLoaded)return;
+  try{localStorage.setItem(CART_KEY,JSON.stringify(cart));setCartSaved(true);}catch{setCartSaved(false);}
+ },[cart,cartLoaded]);
  const count=Object.values(sel).reduce((a,b)=>a+b,0),total=cart.reduce((a,b)=>a+b.price*b.qty,0),items=cart.reduce((a,b)=>a+b.qty,0);
  useEffect(()=>{if(show){dialog.current?.showModal();document.body.style.overflow='hidden'}else{dialog.current?.close();document.body.style.overflow=''}return()=>{document.body.style.overflow=''}},[show]);
  useEffect(()=>()=>clearTimeout(toastTimer.current),[]);
  function add(title,detail,price,qty=1){setCart(c=>{const i=c.findIndex(x=>x.title===title&&x.detail===detail);return i>=0?c.map((x,j)=>i===j?{...x,qty:x.qty+qty}:x):[...c,{title,detail,price,qty}]});setToast('Agregado a tu pedido');clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setToast(''),2600)}
  function change(i,d){setCart(c=>c.map((x,j)=>i===j?{...x,qty:x.qty+d}:x).filter(x=>x.qty>0))}
  function combo(){if(count!==size)return;add('Combo de '+size,flavors.filter(f=>sel[f.name]).map(f=>sel[f.name]+' '+f.name).join(', '),size===6?17:34,comboQty);setSel({});setComboQty(1);setShow(true)}
- function send(e){e.preventDefault();if(!cart.length||!name.trim()||!phone.trim()||(delivery==='Delivery'&&!address.trim())){setError('Completá nombre, teléfono y dirección si solicitás delivery.');return}setError('');const msg='🥟 *ARGENTINA AL HORNO*\n*Pedido de:* '+name+'\n*Teléfono:* '+phone+'\n*Modalidad:* '+delivery+'\n*Dirección:* '+(delivery==='Delivery'?address:'A coordinar')+'\n*Pago:* '+method+'\n\n'+cart.map(x=>x.qty+' x '+x.title+' (por combo/unidad: '+x.detail+') '+money(x.qty*x.price)).join('\n')+'\n\n*Subtotal:* '+money(total)+'\n*Delivery y total final:* a confirmar\n*Notas:* '+notes+'\nQuisiera confirmar mi pedido.';window.open(contact(msg),'_blank','noopener,noreferrer')}
+ function send(e){e.preventDefault();if(!cart.length||!name.trim()||!phone.trim()||(delivery==='Delivery'&&!address.trim())){setError('Completá nombre, teléfono y dirección si solicitás delivery.');return}const currentDate=puertoRicoToday();
+ if((desiredTime&&!desiredDate)||(desiredDate&&desiredDate<currentDate)){setToday(currentDate);setError('Elegí una fecha de hoy en adelante para el horario solicitado.');return}
+ if(desiredDate&&desiredTime&&new Date(desiredDate+'T'+desiredTime+':00-04:00').getTime()<=Date.now()){setError('Ese horario ya pasó en Puerto Rico. Elegí uno posterior o dejalo a coordinar.');return}
+ setError('');const msg='🥟 *ARGENTINA AL HORNO*\n*Pedido de:* '+name+'\n*Teléfono:* '+phone+'\n*Modalidad:* '+delivery+'\n*Dirección:* '+(delivery==='Delivery'?address:'A coordinar')+'\n*Pago:* '+method+'\n*Fecha deseada:* '+(desiredDate?desiredDate.split('-').reverse().join('/'):'A coordinar')+'\n*Horario deseado (Puerto Rico):* '+(desiredTime||'A coordinar')+'\n*Fecha y horario sujetos a confirmación.*\n\n'+cart.map(x=>x.qty+' x '+x.title+' (por combo/unidad: '+x.detail+') '+money(x.qty*x.price)).join('\n')+'\n\n*Subtotal:* '+money(total)+'\n*Delivery y total final:* a confirmar\n*Notas:* '+notes+'\nQuisiera confirmar mi pedido.';window.open(contact(msg),'_blank','noopener,noreferrer')}
  return <>
   <div className="announcement">De Argentina a tu mesa <span>✦</span> Delivery en San Juan y áreas cercanas</div>
   <header><a className="wordmark" href="#inicio" aria-label="Argentina al Horno, inicio"><span>Argentina</span><small>AL HORNO</small></a><nav aria-label="Navegación principal"><a href="#menu">Sabores</a><a href="#combos">Armá tu combo</a><a href="#eventos">Eventos</a></nav><button className="cart-button" onClick={()=>setShow(true)} aria-label={'Abrir carrito, '+items+' productos'}><Bag/><span>Mi pedido</span><b key={items}>{items}</b></button></header>
@@ -38,6 +76,6 @@ export default function Home(){
   <footer><a className="wordmark" href="#inicio"><span>Argentina</span><small>AL HORNO</small></a><p>Empanadas artesanales en Puerto Rico.<br/>Delivery en San Juan y áreas cercanas.</p><a href="tel:+17879483022">(787) 948-3022</a><small>ATH Móvil · Efectivo<br/>Pedidos y entregas a coordinar.</small></footer>
   <div className={'toast '+(toast?'visible':'')} role="status">✓ {toast}</div>
   {items>0&&!show&&<button className="mobile-cart" onClick={()=>setShow(true)}><Bag/><span>Ver mi pedido · {items}</span><b>{money(total)}</b></button>}
-  <dialog ref={dialog} className="cart" onCancel={()=>setShow(false)} onClick={e=>{if(e.target===dialog.current)setShow(false)}} aria-labelledby="cart-title"><div className="cart-inner"><div className="row cart-heading"><div><p className="eyebrow">CASI A TU MESA</p><h2 id="cart-title">Tu pedido</h2></div><button className="close" aria-label="Cerrar carrito" onClick={()=>setShow(false)}>✕</button></div>{cart.length===0?<div className="empty-cart"><Bag/><h3>Tu mesa todavía está vacía.</h3><p>Sumá tus favoritas y nosotros ponemos el horno.</p><button onClick={()=>setShow(false)}>Elegir empanadas</button></div>:<><div className="cart-lines">{cart.map((x,i)=><div className="line" key={x.title+x.detail}><b>{x.title}</b><p className="muted">{x.title.startsWith('Combo')?'Por combo: ':''}{x.detail}</p><div className="row"><strong>{money(x.price*x.qty)}</strong><div className="step"><button aria-label={'Quitar '+x.title} onClick={()=>change(i,-1)}>−</button><span>{x.qty}</span><button aria-label={'Sumar '+x.title} onClick={()=>change(i,1)}>+</button></div></div></div>)}</div><div className="subtotal row"><b>Subtotal</b><strong>{money(total)}</strong></div><p className="fine-print">El envío y el total final se confirman por WhatsApp.</p><form onSubmit={send}><label>Nombre<input required autoComplete="name" value={name} onChange={e=>setName(e.target.value)}/></label><label>Teléfono<input required type="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><div className="form-row"><label>Entrega<select value={delivery} onChange={e=>setDelivery(e.target.value)}><option>Delivery</option><option>Recogido</option></select></label><label>Pago<select value={method} onChange={e=>setMethod(e.target.value)}><option>ATH Móvil</option><option>Efectivo</option></select></label></div>{delivery==='Delivery'&&<label>Dirección<textarea required autoComplete="street-address" value={address} onChange={e=>setAddress(e.target.value)}/></label>}<label>Observaciones <span className="muted">(opcional)</span><textarea value={notes} onChange={e=>setNotes(e.target.value)}/></label>{error&&<p className="error" role="alert">{error}</p>}<button className="full" type="submit">Continuar por WhatsApp ↗</button><p className="fine-print">Revisá el mensaje y envialo para solicitar tu pedido.</p></form></>}</div></dialog>
+  <dialog ref={dialog} className="cart" onCancel={()=>setShow(false)} onClick={e=>{if(e.target===dialog.current)setShow(false)}} aria-labelledby="cart-title"><div className="cart-inner"><div className="row cart-heading"><div><p className="eyebrow">CASI A TU MESA</p><h2 id="cart-title">Tu pedido</h2></div><button className="close" aria-label="Cerrar carrito" onClick={()=>setShow(false)}>✕</button></div>{cart.length===0?<div className="empty-cart"><Bag/><h3>Tu mesa todavía está vacía.</h3><p>Sumá tus favoritas y nosotros ponemos el horno.</p><button onClick={()=>setShow(false)}>Elegir empanadas</button></div>:<><p className="fine-print" role="status">{cartSaved?'Tu carrito se guarda automáticamente en este navegador.':'El carrito está disponible durante esta visita.'}</p><div className="cart-lines">{cart.map((x,i)=><div className="line" key={x.title+x.detail}><b>{x.title}</b><p className="muted">{x.title.startsWith('Combo')?'Por combo: ':''}{x.detail}</p><div className="row"><strong>{money(x.price*x.qty)}</strong><div className="step"><button aria-label={'Quitar '+x.title} onClick={()=>change(i,-1)}>−</button><span>{x.qty}</span><button aria-label={'Sumar '+x.title} onClick={()=>change(i,1)}>+</button></div></div></div>)}</div><div className="subtotal row"><b>Subtotal</b><strong>{money(total)}</strong></div><p className="fine-print">El envío y el total final se confirman por WhatsApp.</p><form onSubmit={send}><label>Nombre<input required autoComplete="name" value={name} onChange={e=>setName(e.target.value)}/></label><label>Teléfono<input required type="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)}/></label><div className="form-row"><label>Entrega<select value={delivery} onChange={e=>setDelivery(e.target.value)}><option>Delivery</option><option>Recogido</option></select></label><label>Pago<select value={method} onChange={e=>setMethod(e.target.value)}><option>ATH Móvil</option><option>Efectivo</option></select></label></div>{delivery==='Delivery'&&<label>Dirección<textarea required autoComplete="street-address" value={address} onChange={e=>setAddress(e.target.value)}/></label>}<fieldset style={{border:'1px solid #cdd1cc',borderRadius:5,padding:'4px 14px 14px',margin:'20px 0'}}><legend style={{fontSize:13,fontWeight:700,padding:'0 6px'}}>¿Cuándo lo querés?</legend><div className="form-row"><label>Fecha deseada<input type="date" min={today||undefined} required={!!desiredTime} value={desiredDate} onChange={e=>{setDesiredDate(e.target.value);setError('')}}/></label><label>Hora deseada<input type="time" value={desiredTime} onChange={e=>{setDesiredTime(e.target.value);setError('')}}/></label></div><p className="fine-print" style={{textAlign:'left'}}>Opcional. Horario de Puerto Rico. Confirmaremos disponibilidad por WhatsApp; esto no reserva un turno.</p></fieldset><label>Observaciones <span className="muted">(opcional)</span><textarea value={notes} onChange={e=>setNotes(e.target.value)}/></label>{error&&<p className="error" role="alert">{error}</p>}<button className="full" type="submit">Continuar por WhatsApp ↗</button><p className="fine-print">Revisá el mensaje y envialo para solicitar tu pedido.</p></form></>}</div></dialog>
  </>;
 }
