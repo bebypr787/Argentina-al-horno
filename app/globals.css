@@ -37,3 +37,23 @@ html{scroll-padding-top:135px}
 .wordmark::before{content:'';position:absolute;inset:0 -8px;z-index:-1;pointer-events:none;background:url('/images/argentina-flag.svg') center/100% 100% no-repeat;opacity:.55;transform:rotate(-4deg);clip-path:polygon(3% 12%,22% 6%,39% 8%,58% 2%,76% 7%,98% 3%,95% 16%,100% 23%,96% 37%,99% 46%,95% 59%,100% 72%,94% 78%,97% 91%,76% 96%,59% 92%,38% 99%,22% 93%,1% 98%,5% 82%,0% 73%,4% 57%,1% 45%,5% 29%,0% 22%)}
 .wordmark>span,.wordmark>small{text-shadow:0 1px 3px #fff,0 0 8px #fff}
 @media(max-width:760px){.wordmark{padding:8px 6px}.wordmark::before{inset:0 -5px}}
+
+/* Compact mobile storefront and painted Argentine brand. */
+.wordmark{padding-left:38px;padding-right:10px}
+.wordmark::before{inset:-2px -10px;background-image:url('/images/argentina-brush.svg');opacity:.85;transform:rotate(-2deg);clip-path:none}
+.hero-actions .btn svg{width:18px;height:18px}
+.brand-seal{left:-18px;right:auto}
+@media(max-width:760px){
+.wordmark{padding:8px 6px 8px 30px}
+.wordmark::before{inset:0 -5px}
+.hero{padding-top:24px;gap:18px;padding-bottom:40px}
+.hero h1{font-size:clamp(36px,9vw,54px);line-height:1.04;margin:14px 0}
+.hero-copy .eyebrow{margin-bottom:10px}
+.hero .lead{margin:14px 0 18px;line-height:1.55}
+.hero-actions{gap:16px}
+.hero-actions .btn{gap:12px}
+.hero-meta{margin-top:18px}
+.hero-art{padding-top:8px}
+.brand-seal{left:0;right:auto;top:0;width:94px;height:94px}
+}
+@media(max-width:370px){.cart-button{gap:5px;padding:9px 7px}.wordmark>span{font-size:25px}.hero-meta{gap:9px;font-size:9px}}
