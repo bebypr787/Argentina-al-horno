@@ -57,3 +57,9 @@ html{scroll-padding-top:135px}
 .brand-seal{left:0;right:auto;top:0;width:94px;height:94px}
 }
 @media(max-width:370px){.cart-button{gap:5px;padding:9px 7px}.wordmark>span{font-size:25px}.hero-meta{gap:9px;font-size:9px}}
+
+.product-type{display:block;font-size:13px;font-weight:700;margin-bottom:18px}
+.product-type select,.product-type input{display:block;width:100%;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);font-size:16px}
+.combo-flavor>div>b{font-size:13px}
+.fill-flavor{display:block;padding:5px 0;background:transparent;color:var(--ink);font-size:10px;text-decoration:underline}
+.fill-flavor:hover{background:transparent;box-shadow:none;transform:none}
