@@ -30,7 +30,7 @@ export const metadata = {
     images: ['/images/argentina-al-horno-social.jpg'],
   },
 };
-export const viewport = { themeColor: '#234f68' };
+export const viewport = { themeColor: '#75c9ed' };
 export default function RootLayout({ children }) {
   return <html lang="es-PR"><body>{children}</body></html>;
 }
