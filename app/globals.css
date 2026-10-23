@@ -30,3 +30,10 @@ html{scroll-padding-top:135px}
 .whatsapp-float:hover{background:#08763c;transform:translateY(-3px);box-shadow:0 9px 25px #0004}
 .whatsapp-float:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
 @media(max-width:760px){.whatsapp-float{right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:54px;height:54px}.whatsapp-float.above-cart{bottom:calc(94px + env(safe-area-inset-bottom,0px))}}
+
+/* Argentine flag artwork: flag-icons (MIT). */
+.flag{width:32px;height:24px;background:none;object-fit:contain}
+.wordmark{position:relative;isolation:isolate;padding:10px 14px;flex-shrink:0}
+.wordmark::before{content:'';position:absolute;inset:0 -8px;z-index:-1;pointer-events:none;background:url('/images/argentina-flag.svg') center/100% 100% no-repeat;opacity:.55;transform:rotate(-4deg);clip-path:polygon(3% 12%,22% 6%,39% 8%,58% 2%,76% 7%,98% 3%,95% 16%,100% 23%,96% 37%,99% 46%,95% 59%,100% 72%,94% 78%,97% 91%,76% 96%,59% 92%,38% 99%,22% 93%,1% 98%,5% 82%,0% 73%,4% 57%,1% 45%,5% 29%,0% 22%)}
+.wordmark>span,.wordmark>small{text-shadow:0 1px 3px #fff,0 0 8px #fff}
+@media(max-width:760px){.wordmark{padding:8px 6px}.wordmark::before{inset:0 -5px}}
